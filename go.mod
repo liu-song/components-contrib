@@ -40,12 +40,15 @@ require (
 	github.com/apache/dubbo-go-hessian2 v1.11.5
 	github.com/apache/pulsar-client-go v0.9.0
 	github.com/apache/rocketmq-client-go/v2 v2.1.1-rc2
-	github.com/aws/aws-sdk-go v1.44.202
+	github.com/apache/thrift v0.13.0
+	github.com/aws/aws-sdk-go v1.44.204
 	github.com/benbjohnson/clock v1.3.0
 	github.com/bradfitz/gomemcache v0.0.0-20230124162541-5f7a7d875746
 	github.com/camunda/zeebe/clients/go/v8 v8.1.8
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/cinience/go_rocketmq v0.0.2
+	github.com/cloudwego/kitex v0.4.4
+	github.com/cloudwego/kitex-examples v0.1.1
 	github.com/cyphar/filepath-securejoin v0.2.3
 	github.com/dancannon/gorethink v4.0.0+incompatible
 	github.com/dapr/kit v0.0.4
@@ -126,6 +129,20 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/utils v0.0.0-20230115233650-391b47cb4029
 	modernc.org/sqlite v1.20.4
+)
+
+require (
+	github.com/bytedance/gopkg v0.0.0-20220531084716-665b4f21126f // indirect
+	github.com/chenzhuoyu/iasm v0.0.0-20220818063314-28c361dae733 // indirect
+	github.com/choleraehyq/pid v0.0.15 // indirect
+	github.com/cloudwego/fastpb v0.0.3 // indirect
+	github.com/cloudwego/frugal v0.1.3 // indirect
+	github.com/cloudwego/netpoll v0.3.1 // indirect
+	github.com/cloudwego/thriftgo v0.2.4 // indirect
+	github.com/google/pprof v0.0.0-20221118152302-e6195bd50e26 // indirect
+	github.com/jhump/protoreflect v1.8.2 // indirect
+	github.com/oleiade/lane v1.0.1 // indirect
+	golang.org/x/arch v0.0.0-20220722155209-00200b7164a7 // indirect
 )
 
 require (
@@ -308,7 +325,7 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
