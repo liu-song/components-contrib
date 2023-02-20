@@ -39,9 +39,8 @@ import (
 
 const (
 	hostports   = "127.0.0.1:8888"
-	destService = "cloudwego"
+	destService = "echo"
 	MethodName  = "echo"
-	testName    = "kitex-certification"
 	sidecarName = "kitex-sidecar"
 	bindingName = "cloudwego-kitex-binding"
 )
@@ -65,7 +64,6 @@ func TestKitexBinding(t *testing.T) {
 
 		req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
 
-		// 注意 destService  和  method 的使用
 		reqData, err := codec.Encode(MethodName, thrift.CALL, 0, req)
 		assert.Nil(t, err)
 		metadata := map[string]string{

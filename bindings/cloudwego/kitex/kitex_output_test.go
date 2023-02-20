@@ -15,7 +15,7 @@ package kitex
 
 import (
 	"context"
-	"log"
+	"github.com/cloudwego/kitex"
 	"testing"
 	"time"
 
@@ -32,7 +32,7 @@ import (
 
 const (
 	hostports   = "127.0.0.1:8888"
-	destService = "cloudwego"
+	destService = "echo"
 	MethodName  = "echo"
 )
 
@@ -45,19 +45,19 @@ func TestInvoke(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 3)
 
-	output := NewKitexOutput(logger.NewLogger("hello kitex"))
+	output := NewKitexOutput(logger.NewLogger("hello CloudWeGo"))
 
 	codec := utils.NewThriftMessageCodec()
 
-	req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
+	req := &api.EchoEchoArgs{Req: &api.Request{Message: "hello Kitex"}}
 
-	ctx := context.Background() // 注意 destService  和  method 的使用
+	ctx := context.Background()
 	buf, err := codec.Encode(MethodName, thrift.CALL, 0, req)
 	assert.Nil(t, err)
 
 	resp, err := output.Invoke(ctx, &bindings.InvokeRequest{
 		Metadata: map[string]string{
-			metadataRPCVersion:     "4.0.0",
+			metadataRPCVersion:     kitex.Version,
 			metadataRPCHostports:   hostports,
 			metadataRPCDestService: destService,
 			metadataRPCMethodName:  MethodName,
@@ -74,16 +74,16 @@ func TestInvoke(t *testing.T) {
 	if err != nil {
 		klog.Fatal(err)
 	}
-	klog.Info(result.Success)
+	klog.Info(result.Success, result.String())
 	time.Sleep(time.Second)
 }
 
 func runKitexServer(stop chan struct{}) error {
 	svr := echo.NewServer(new(EchoImpl))
 	if err := svr.Run(); err != nil {
-		log.Println("server stopped with error:", err)
+		klog.Errorf("server stopped with error:", err)
 	} else {
-		log.Println("server stopped")
+		klog.Errorf("server stopped")
 	}
 
 	after := time.After(time.Second * 10)
@@ -102,5 +102,5 @@ type EchoImpl struct{}
 // Echo implements the Echo interface.
 func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
 	klog.Info("echo called")
-	return &api.Response{Message: req.Message + "+clouewego"}, nil
+	return &api.Response{Message: req.Message + ",hi dapr"}, nil
 }

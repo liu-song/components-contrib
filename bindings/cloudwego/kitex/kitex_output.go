@@ -72,7 +72,6 @@ func (out *kitexOutputBinding) Invoke(ctx context.Context, req *bindings.InvokeR
 	} else {
 		out.cacheLock.RUnlock()
 	}
-	// 序列化，反序列化的字段
 	rsp, err := kitexContextCache.Invoke(ctx, req.Data)
 	if data, ok := rsp.([]byte); ok {
 		finalResult.Data = data
