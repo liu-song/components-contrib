@@ -61,7 +61,6 @@ func (out *kitexOutputBinding) Invoke(ctx context.Context, req *bindings.InvokeR
 		out.cacheLock.Lock()
 
 		if kitexContextCache, ok = out.ctxCache[kitexCtxKey]; !ok {
-
 			if err := kitexCtx.Init(req.Metadata); err != nil {
 				out.cacheLock.Unlock()
 				return finalResult, err
