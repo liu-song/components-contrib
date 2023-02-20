@@ -16,10 +16,11 @@ package kitex
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/client/genericclient"
 	"github.com/cloudwego/kitex/pkg/generic"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -48,27 +49,27 @@ func newKitexContext(metadata map[string]string) *kitexContext {
 	return kitexMetadata
 }
 
-func (d *kitexContext) Init(Metadata map[string]string) error {
+func (d *kitexContext) Init(metadata map[string]string) error {
 	if d.inited {
 		return nil
 	}
 	var destService, hostports string
-	destService, ok := Metadata[metadataRPCDestService]
+	destService, ok := metadata[metadataRPCDestService]
 	if !ok {
-		return errors.Errorf("metadataRPCDestService isn't exist")
+		return xerrors.Errorf("metadataRPCDestService isn't exist")
 	}
-	hostports, ok = Metadata[metadataRPCHostports]
+	hostports, ok = metadata[metadataRPCHostports]
 	if !ok {
-		return errors.Errorf("metadataRPCHostports isn't exist")
+		return xerrors.Errorf("metadataRPCHostports isn't exist")
 	}
-	_, ok = Metadata[metadataRPCMethodName]
+	_, ok = metadata[metadataRPCMethodName]
 	if !ok {
-		return errors.Errorf("metadataRPCMethodName isn't exist")
+		return xerrors.Errorf("metadataRPCMethodName isn't exist")
 	}
 
 	genericCli, err := genericclient.NewClient(destService, generic.BinaryThriftGeneric(), client.WithHostPorts(hostports))
 	if err != nil {
-		return errors.Errorf("Get gerneric service of kitex failed")
+		return xerrors.Errorf("Get gerneric service of kitex failed")
 	}
 	d.client = genericCli
 	d.inited = true
@@ -76,7 +77,6 @@ func (d *kitexContext) Init(Metadata map[string]string) error {
 }
 
 func (d *kitexContext) Invoke(ctx context.Context, body []byte) (interface{}, error) {
-
 	resp, err := d.client.GenericCall(ctx, d.method, body)
 	if err != nil {
 		return nil, err

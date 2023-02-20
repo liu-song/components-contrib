@@ -1,29 +1,100 @@
+/*
+Copyright 2023 The Dapr Authors
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package kitex
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"testing"
+	"time"
+
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/utils"
 	"github.com/dapr/components-contrib/bindings"
+	"github.com/dapr/components-contrib/bindings/cloudwego/kitex"
+	"github.com/dapr/components-contrib/tests/certification/embedded"
+	"github.com/dapr/components-contrib/tests/certification/flow"
+	"github.com/dapr/components-contrib/tests/certification/flow/sidecar"
+	bindings_loader "github.com/dapr/dapr/pkg/components/bindings"
+	"github.com/dapr/dapr/pkg/runtime"
+	daprsdk "github.com/dapr/go-sdk/client"
 	"github.com/dapr/kit/logger"
-	"log"
-
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
 	hostports   = "127.0.0.1:8888"
 	destService = "cloudwego"
 	MethodName  = "echo"
+	testName    = "kitex-certification"
+	sidecarName = "kitex-sidecar"
+	bindingName = "cloudwego-kitex-binding"
 )
 
-func TestInvoke(t *testing.T) {
+const (
+	metadataRPCMethodName  = "methodName"
+	metadataRPCDestService = "destService"
+	metadataRPCHostports   = "host-ports"
+	metadataRPCVersion     = "version"
+)
+
+func TestKitexBinding(t *testing.T) {
 	// 0. init dapr provided and kitex server
+	testKitexInvocation := func(ctx flow.Context) error {
+		client, clientErr := daprsdk.NewClientWithPort(fmt.Sprint(runtime.DefaultDaprAPIGRPCPort))
+		if clientErr != nil {
+			panic(clientErr)
+		}
+		defer client.Close()
+		codec := utils.NewThriftMessageCodec()
+
+		req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
+
+		// 注意 destService  和  method 的使用
+		reqData, err := codec.Encode(MethodName, thrift.CALL, 0, req)
+		assert.Nil(t, err)
+		metadata := map[string]string{
+			metadataRPCVersion:     "4.0.0",
+			metadataRPCHostports:   hostports,
+			metadataRPCDestService: destService,
+			metadataRPCMethodName:  MethodName,
+		}
+
+		invokeRequest := &daprsdk.InvokeBindingRequest{
+			Name:      bindingName,
+			Operation: string(bindings.GetOperation),
+			Metadata:  metadata,
+			Data:      reqData,
+		}
+
+		resp, err := client.InvokeBinding(ctx, invokeRequest)
+		assert.Nil(t, err)
+		result := &api.EchoEchoResult{}
+
+		_, _, err = codec.Decode(resp.Data, result)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		klog.Info(result.Success)
+		time.Sleep(time.Second)
+		return nil
+	}
+
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	go func() {
@@ -31,48 +102,24 @@ func TestInvoke(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 3)
 
-	output := NewKitexOutput(logger.NewLogger("hello kitex"))
+	flow.New(t, "test kitex binding config").
+		Step(sidecar.Run(sidecarName,
+			embedded.WithoutApp(),
+			embedded.WithComponentsPath("./components"),
+			embedded.WithDaprGRPCPort(runtime.DefaultDaprAPIGRPCPort),
+			embedded.WithDaprHTTPPort(runtime.DefaultDaprHTTPPort),
+			runtime.WithBindings(newBindingsRegistry()))).
+		Step("verify kitex invocation", testKitexInvocation).
+		Run()
+}
 
-	//genericCli, err := genericclient.NewClient(destService, generic.BinaryThriftGeneric(), client.WithHostPorts(hostports))
-	//if err != nil {
-	//	klog.Fatal(err)
-	//}
-	codec := utils.NewThriftMessageCodec()
+func newBindingsRegistry() *bindings_loader.Registry {
+	log := logger.NewLogger("dapr.components")
 
-	req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
-
-	ctx := context.Background() // 注意 destService  和  method 的使用
-	buf, err := codec.Encode(MethodName, thrift.CALL, 0, req)
-	assert.Nil(t, err)
-	//resp, err := genericCli.GenericCall(ctx, MethodName, buf) //二进制，泛化调用
-
-	resp, err := output.Invoke(ctx, &bindings.InvokeRequest{
-		Metadata: map[string]string{
-			metadataRPCVersion:     "4.0.0",
-			metadataRPCHostports:   hostports,
-			metadataRPCDestService: destService,
-			metadataRPCMethodName:  MethodName,
-		},
-		Data:      buf,
-		Operation: bindings.GetOperation,
-	})
-
-	if err != nil {
-		klog.Errorf("call echo failed: %w\n", err)
-	}
-	result := &api.EchoEchoResult{}
-	//if v, ok := resp.(*bindings.InvokeResponse); ok {
-	//	//跟什么类型判断就只能调用什么类型的方法
-	//	v("BrainWu")
-	//}
-
-	_, _, err = codec.Decode(resp.Data, result)
-	if err != nil {
-		klog.Fatal(err)
-	}
-	klog.Info(result.Success)
-	time.Sleep(time.Second)
-
+	r := bindings_loader.NewRegistry()
+	r.Logger = log
+	r.RegisterOutputBinding(kitex.NewKitexOutput, "cloudwego.kitex")
+	return r
 }
 
 func runKitexServer(stop chan struct{}) error {

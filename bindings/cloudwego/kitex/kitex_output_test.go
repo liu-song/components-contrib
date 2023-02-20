@@ -15,18 +15,19 @@ package kitex
 
 import (
 	"context"
+	"log"
+	"testing"
+	"time"
+
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/utils"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/dapr/components-contrib/bindings"
 	"github.com/dapr/kit/logger"
-	"log"
-
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const (
@@ -46,10 +47,6 @@ func TestInvoke(t *testing.T) {
 
 	output := NewKitexOutput(logger.NewLogger("hello kitex"))
 
-	//genericCli, err := genericclient.NewClient(destService, generic.BinaryThriftGeneric(), client.WithHostPorts(hostports))
-	//if err != nil {
-	//	klog.Fatal(err)
-	//}
 	codec := utils.NewThriftMessageCodec()
 
 	req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
@@ -57,7 +54,6 @@ func TestInvoke(t *testing.T) {
 	ctx := context.Background() // 注意 destService  和  method 的使用
 	buf, err := codec.Encode(MethodName, thrift.CALL, 0, req)
 	assert.Nil(t, err)
-	//resp, err := genericCli.GenericCall(ctx, MethodName, buf) //二进制，泛化调用
 
 	resp, err := output.Invoke(ctx, &bindings.InvokeRequest{
 		Metadata: map[string]string{
@@ -69,15 +65,10 @@ func TestInvoke(t *testing.T) {
 		Data:      buf,
 		Operation: bindings.GetOperation,
 	})
-
 	if err != nil {
 		klog.Errorf("call echo failed: %w\n", err)
 	}
 	result := &api.EchoEchoResult{}
-	//if v, ok := resp.(*bindings.InvokeResponse); ok {
-	//	//跟什么类型判断就只能调用什么类型的方法
-	//	v("BrainWu")
-	//}
 
 	_, _, err = codec.Decode(resp.Data, result)
 	if err != nil {
@@ -85,7 +76,6 @@ func TestInvoke(t *testing.T) {
 	}
 	klog.Info(result.Success)
 	time.Sleep(time.Second)
-
 }
 
 func runKitexServer(stop chan struct{}) error {

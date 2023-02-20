@@ -17,12 +17,6 @@ import (
 	"context"
 	"sync"
 
-	//_ "dubbo.apache.org/dubbo-go/v3/cluster/cluster/failover"
-	//_ "dubbo.apache.org/dubbo-go/v3/cluster/loadbalance/random"
-	//
-	//_ "dubbo.apache.org/dubbo-go/v3/common/proxy/proxy_factory"
-	//_ "dubbo.apache.org/dubbo-go/v3/filter/filter_impl"
-	//_ "dubbo.apache.org/dubbo-go/v3/protocol/dubbo"
 	"github.com/dapr/components-contrib/bindings"
 	"github.com/dapr/kit/logger"
 )
@@ -48,7 +42,6 @@ func NewKitexOutput(logger logger.Logger) bindings.OutputBinding {
 }
 
 func (out *kitexOutputBinding) Init(_ context.Context, _ bindings.Metadata) error {
-
 	return nil
 }
 
