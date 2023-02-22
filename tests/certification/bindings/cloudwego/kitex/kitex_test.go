@@ -16,7 +16,6 @@ package kitex
 import (
 	"context"
 	"fmt"
-	"log"
 	"testing"
 	"time"
 
@@ -53,7 +52,7 @@ const (
 )
 
 func TestKitexBinding(t *testing.T) {
-	// 0. init dapr provided and kitex server
+
 	testKitexInvocation := func(ctx flow.Context) error {
 		client, clientErr := daprsdk.NewClientWithPort(fmt.Sprint(runtime.DefaultDaprAPIGRPCPort))
 		if clientErr != nil {
@@ -62,7 +61,7 @@ func TestKitexBinding(t *testing.T) {
 		defer client.Close()
 		codec := utils.NewThriftMessageCodec()
 
-		req := &api.EchoEchoArgs{Req: &api.Request{Message: "my request"}}
+		req := &api.EchoEchoArgs{Req: &api.Request{Message: "hello dapr"}}
 
 		reqData, err := codec.Encode(MethodName, thrift.CALL, 0, req)
 		assert.Nil(t, err)
@@ -85,10 +84,8 @@ func TestKitexBinding(t *testing.T) {
 		result := &api.EchoEchoResult{}
 
 		_, _, err = codec.Decode(resp.Data, result)
-		if err != nil {
-			klog.Fatal(err)
-		}
-		klog.Info(result.Success)
+		assert.Nil(t, err)
+		assert.Equal(t, "hello dapr,hi Kitex", result.Success.Message)
 		time.Sleep(time.Second)
 		return nil
 	}
@@ -123,9 +120,9 @@ func newBindingsRegistry() *bindings_loader.Registry {
 func runKitexServer(stop chan struct{}) error {
 	svr := echo.NewServer(new(EchoImpl))
 	if err := svr.Run(); err != nil {
-		log.Println("server stopped with error:", err)
+		klog.Errorf("server stopped with error:", err)
 	} else {
-		log.Println("server stopped")
+		klog.Errorf("server stopped")
 	}
 
 	after := time.After(time.Second * 10)
@@ -138,11 +135,10 @@ func runKitexServer(stop chan struct{}) error {
 
 var _ api.Echo = &EchoImpl{}
 
-// EchoImpl implements the last service interface defined in the IDL.
 type EchoImpl struct{}
 
 // Echo implements the Echo interface.
 func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
 	klog.Info("echo called")
-	return &api.Response{Message: req.Message + "+clouewego"}, nil
+	return &api.Response{Message: req.Message + ",hi Kitex"}, nil
 }

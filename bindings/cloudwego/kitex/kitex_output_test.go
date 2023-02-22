@@ -15,11 +15,11 @@ package kitex
 
 import (
 	"context"
-	"github.com/cloudwego/kitex"
 	"testing"
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/cloudwego/kitex"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
 	"github.com/cloudwego/kitex/pkg/klog"
@@ -37,7 +37,7 @@ const (
 )
 
 func TestInvoke(t *testing.T) {
-	// 0. init dapr provided and kitex server
+	// 0. init  Kitex server
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 	go func() {
@@ -45,16 +45,17 @@ func TestInvoke(t *testing.T) {
 	}()
 	time.Sleep(time.Second * 3)
 
-	output := NewKitexOutput(logger.NewLogger("hello CloudWeGo"))
+	// 1 create KitexOutput
+	output := NewKitexOutput(logger.NewLogger("hello dapr && CloudWeGo"))
 
+	// 2 create req bytes
 	codec := utils.NewThriftMessageCodec()
-
-	req := &api.EchoEchoArgs{Req: &api.Request{Message: "hello Kitex"}}
-
+	req := &api.EchoEchoArgs{Req: &api.Request{Message: "hello dapr"}}
 	ctx := context.Background()
-	buf, err := codec.Encode(MethodName, thrift.CALL, 0, req)
+	reqData, err := codec.Encode(MethodName, thrift.CALL, 0, req)
 	assert.Nil(t, err)
 
+	// 3. invoke dapr kitex output binding, get rsp bytes
 	resp, err := output.Invoke(ctx, &bindings.InvokeRequest{
 		Metadata: map[string]string{
 			metadataRPCVersion:     kitex.Version,
@@ -62,20 +63,16 @@ func TestInvoke(t *testing.T) {
 			metadataRPCDestService: destService,
 			metadataRPCMethodName:  MethodName,
 		},
-		Data:      buf,
+		Data:      reqData,
 		Operation: bindings.GetOperation,
 	})
-	if err != nil {
-		klog.Errorf("call echo failed: %w\n", err)
-	}
-	result := &api.EchoEchoResult{}
+	assert.Nil(t, err)
 
+	// 4. get rep value
+	result := &api.EchoEchoResult{}
 	_, _, err = codec.Decode(resp.Data, result)
-	if err != nil {
-		klog.Fatal(err)
-	}
-	klog.Info(result.Success, result.String())
-	time.Sleep(time.Second)
+	assert.Nil(t, err)
+	assert.Equal(t, "hello dapr,hi Kitex", result.Success.Message)
 }
 
 func runKitexServer(stop chan struct{}) error {
@@ -96,11 +93,10 @@ func runKitexServer(stop chan struct{}) error {
 
 var _ api.Echo = &EchoImpl{}
 
-// EchoImpl implements the last service interface defined in the IDL.
 type EchoImpl struct{}
 
 // Echo implements the Echo interface.
 func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
 	klog.Info("echo called")
-	return &api.Response{Message: req.Message + ",hi dapr"}, nil
+	return &api.Response{Message: req.Message + ",hi Kitex"}, nil
 }

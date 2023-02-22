@@ -20,7 +20,6 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/client/genericclient"
 	"github.com/cloudwego/kitex/pkg/generic"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -56,20 +55,20 @@ func (d *kitexContext) Init(metadata map[string]string) error {
 	var destService, hostPorts string
 	destService, ok := metadata[metadataRPCDestService]
 	if !ok {
-		return xerrors.Errorf("metadataRPCDestService isn't exist")
+		return fmt.Errorf("dapr bingdings cloudwego/kitex metadataRPCDestService isn't exist")
 	}
 	hostPorts, ok = metadata[metadataRPCHostports]
 	if !ok {
-		return xerrors.Errorf("metadataRPCHostPorts isn't exist")
+		return fmt.Errorf("dapr bingdings cloudwego/kitex metadataRPCHostPorts isn't exist")
 	}
 	_, ok = metadata[metadataRPCMethodName]
 	if !ok {
-		return xerrors.Errorf("metadataRPCMethodName isn't exist")
+		return fmt.Errorf("dapr bingdings cloudwego/kitex metadataRPCMethodName isn't exist")
 	}
 
 	genericCli, err := genericclient.NewClient(destService, generic.BinaryThriftGeneric(), client.WithHostPorts(hostPorts))
 	if err != nil {
-		return xerrors.Errorf("Get gerneric service of kitex failed")
+		return fmt.Errorf("get gerneric service of kitex failed %w", err)
 	}
 	d.client = genericCli
 	d.inited = true
